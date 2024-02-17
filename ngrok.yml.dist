@@ -2,6 +2,6 @@ version: 2
 authtoken: [your-ngrok-authtoken]
 tunnels:
   first:
-    addr: bot:8080
+    addr: crypto_pay_webhook:3001
     proto: http
     hostname: [your-ngrok-subdomain].ngrok-free.app
