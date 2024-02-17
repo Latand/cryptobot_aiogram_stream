@@ -1,11 +1,17 @@
-from aiogram import Router, F
+from aiocryptopay import AioCryptoPay
+from aiogram import F, Router
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery
-from aiogram.utils.formatting import as_section, as_key_value, as_marked_list
+from aiogram.types import CallbackQuery, Message
+from aiogram.utils.formatting import as_key_value, as_marked_list, as_section
+from infrastructure.database.repo.requests import RequestsRepo
 
-from tgbot.keyboards.inline import simple_menu_keyboard, my_orders_keyboard, \
-    OrderCallbackData
+from tgbot.keyboards.inline import (
+    OrderCallbackData,
+    create_invoice_keyboard,
+    my_orders_keyboard,
+    simple_menu_keyboard,
+)
 
 menu_router = Router()
 
@@ -40,13 +46,19 @@ ORDERS = [
 @menu_router.callback_query(F.data == "my_orders")
 async def my_orders(query: CallbackQuery):
     await query.answer()
-    await query.message.edit_text("Ви обрали перегляд ваших замовлень!",
-                                  reply_markup=my_orders_keyboard(ORDERS))
+    await query.message.edit_text(
+        "Ви обрали перегляд ваших замовлень!", reply_markup=my_orders_keyboard(ORDERS)
+    )
 
 
 # To filter the callback data, that was created with CallbackData factory, you can use .filter() method
 @menu_router.callback_query(OrderCallbackData.filter())
-async def show_order(query: CallbackQuery, callback_data: OrderCallbackData):
+async def show_order(
+    query: CallbackQuery,
+    callback_data: OrderCallbackData,
+    crypto_pay: AioCryptoPay,
+    repo: RequestsRepo,
+):
     await query.answer()
 
     # You can get the data from callback_data object as attributes
@@ -70,7 +82,17 @@ async def show_order(query: CallbackQuery, callback_data: OrderCallbackData):
         # - Товар: Замовлення 2
         # - Статус: Виконано
 
-        await query.message.edit_text(text.as_html(), parse_mode=ParseMode.HTML)
+        invoice = await crypto_pay.create_invoice(
+            amount=1, fiat="USD", currency_type="fiat"
+        )
+        invoice_keyboard = create_invoice_keyboard(invoice.bot_invoice_url)
+
+        await query.message.edit_text(
+            text.as_html(), parse_mode=ParseMode.HTML, reply_markup=invoice_keyboard
+        )
+        await repo.transactions.create_transaction(
+            user_id=query.from_user.id, invoice=invoice
+        )
 
         # You can also use MarkdownV2:
         # await query.message.edit_text(text.as_markdown(), parse_mode=ParseMode.MARKDOWN_V2)

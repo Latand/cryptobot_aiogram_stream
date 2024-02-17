@@ -7,8 +7,9 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 def very_simple_keyboard():
     buttons = [
         [
-            InlineKeyboardButton(text="📝 Створити замовлення",
-                                 callback_data="create_order"),
+            InlineKeyboardButton(
+                text="📝 Створити замовлення", callback_data="create_order"
+            ),
             InlineKeyboardButton(text="📋 Мої замовлення", callback_data="my_orders"),
         ],
     ]
@@ -25,14 +26,11 @@ def simple_menu_keyboard():
     keyboard = InlineKeyboardBuilder()
 
     # You can use keyboard.button() method to add buttons, then enter text and callback_data
-    keyboard.button(
-        text="📝 Створити замовлення",
-        callback_data="create_order"
-    )
+    keyboard.button(text="📝 Створити замовлення", callback_data="create_order")
     keyboard.button(
         text="📋 Мої замовлення",
         # In this simple example, we use a string as callback_data
-        callback_data="my_orders"
+        callback_data="my_orders",
     )
 
     # If needed you can use keyboard.adjust() method to change the number of buttons per row
@@ -55,6 +53,7 @@ class OrderCallbackData(CallbackData, prefix="order"):
 
     # Example usage in simple_menu.py
     """
+
     order_id: int
 
 
@@ -67,7 +66,14 @@ def my_orders_keyboard(orders: list):
             text=f"📝 {order['title']}",
             # Here we use an instance of OrderCallbackData class as callback_data parameter
             # order id is the field in OrderCallbackData class, that we defined above
-            callback_data=OrderCallbackData(order_id=order["id"])
+            callback_data=OrderCallbackData(order_id=order["id"]),
         )
 
+    return keyboard.as_markup()
+
+
+# invoice url keyboard
+def create_invoice_keyboard(invoice_url: str):
+    keyboard = InlineKeyboardBuilder()
+    keyboard.button(text="Оплатити", url=invoice_url)
     return keyboard.as_markup()

@@ -1,0 +1,7 @@
+version: 2
+authtoken: [your-ngrok-authtoken]
+tunnels:
+  first:
+    addr: bot:8080
+    proto: http
+    hostname: [your-ngrok-subdomain].ngrok-free.app

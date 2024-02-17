@@ -1,0 +1,6 @@
+aiocryptopay
+environs
+aiogram
+sqlalchemy~=2.0
+alembic~=1.0
+asyncpg

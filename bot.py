@@ -6,9 +6,12 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.redis import RedisStorage, DefaultKeyBuilder
 
+from aiocryptopay import AioCryptoPay, Networks
+from infrastructure.database.setup import create_engine, create_session_pool
 from tgbot.config import load_config, Config
 from tgbot.handlers import routers_list
 from tgbot.middlewares.config import ConfigMiddleware
+from tgbot.middlewares.database import DatabaseMiddleware
 from tgbot.services import broadcaster
 
 
@@ -29,12 +32,13 @@ def register_global_middlewares(dp: Dispatcher, config: Config, session_pool=Non
     """
     middleware_types = [
         ConfigMiddleware(config),
-        # DatabaseMiddleware(session_pool),
     ]
 
     for middleware_type in middleware_types:
         dp.message.outer_middleware(middleware_type)
         dp.callback_query.outer_middleware(middleware_type)
+
+    dp.update.outer_middleware(DatabaseMiddleware(session_pool))
 
 
 def setup_logging():
@@ -91,10 +95,15 @@ async def main():
 
     bot = Bot(token=config.tg_bot.token, parse_mode="HTML")
     dp = Dispatcher(storage=storage)
+    crypto_pay = AioCryptoPay(token=config.crypto_pay.token, network=Networks.TEST_NET)
+
+    engine = create_engine(config.db)
+    session_pool = create_session_pool(engine)
 
     dp.include_routers(*routers_list)
+    dp.workflow_data.update(crypto_pay=crypto_pay)
 
-    register_global_middlewares(dp, config)
+    register_global_middlewares(dp, config, session_pool)
 
     await on_startup(bot, config.tg_bot.admin_ids)
     await dp.start_polling(bot)
